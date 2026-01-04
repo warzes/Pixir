@@ -25,6 +25,7 @@ void GameApp()
 			}
 			engine::BeginFrame();
 			
+			colorBuffer::Clear(40, 100, 255);
 			for (uint16_t x = 0; x < colorBuffer::GetWidth(); x++)
 			{
 				for (uint16_t y = 0; y < colorBuffer::GetHeight(); y++)
