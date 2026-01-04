@@ -3,6 +3,15 @@
 #include "PlatformWin32.h"
 #include "Core.h"
 #include "MiniOpenGL11.h"
+#include "ColorBuffer.h"
+//=============================================================================
+#if defined(_WIN32)
+extern "C"
+{
+	__declspec(dllexport) unsigned long NvOptimusEnablement = 1;
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+#endif
 //=============================================================================
 namespace
 {
@@ -19,6 +28,9 @@ namespace
 	HGLRC hglrc{ nullptr };
 	HDC hdc{ nullptr };
 	MSG msg{};
+
+	std::chrono::steady_clock::time_point lastFrameTime{};
+	float deltaTime{ 0.0f };
 }
 //=============================================================================
 void setWindowSize(uint16_t width, uint16_t height)
@@ -96,7 +108,7 @@ void ExitEngineApp()
 	IsRunningApp = false;
 }
 //=============================================================================
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) noexcept
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) noexcept
 {
 	switch (uMsg)
 	{
@@ -106,9 +118,31 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
+	case WM_SIZE:
+		{
+			int width = LOWORD(lParam);
+			int height = HIWORD(lParam);
+			if (width > 0 && height > 0)
+			{
+				setWindowSize(width, height);
+				if (hglrc)
+				{
+					glViewport(0, 0, windowWidth, windowHeight);
+				}
+			}
+		}
+		break;
+	case WM_EXITSIZEMOVE:
+		if (hglrc)
+		{
+			colorBuffer::Resize(frameBufferWidth, frameBufferHeight);
+		}
+		break;
 	default:
-		return DefWindowProc(hwnd, uMsg, wParam, lParam);
+		break;
 	}
+
+	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 //=============================================================================
 bool engine::Initialize(uint16_t wndWidth, uint16_t wndHeight, const wchar_t* windowTitle, uint16_t fbHeight)
@@ -147,35 +181,50 @@ bool engine::Initialize(uint16_t wndWidth, uint16_t wndHeight, const wchar_t* wi
 
 	hInstance = GetModuleHandle(nullptr);
 
-	WNDCLASS wc{};
-	wc.style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-	wc.lpfnWndProc   = WindowProc;
-	wc.hInstance     = hInstance;
-	wc.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
-	wc.hCursor       = LoadCursor(nullptr, IDC_ARROW);
-	wc.lpszClassName = WindowClassName;
-	if (!RegisterClass(&wc))
+	WNDCLASSEX wndclassex{ .cbSize = sizeof(WNDCLASSEX) };
+	wndclassex.style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+	wndclassex.lpfnWndProc   = WindowProc;
+	wndclassex.hInstance     = hInstance;
+	wndclassex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+	wndclassex.hCursor       = LoadCursor(nullptr, IDC_ARROW);
+	wndclassex.lpszClassName = WindowClassName;
+	if (!RegisterClassEx(&wndclassex))
 	{
 		Fatal("Failed to register window class!");
 		return false;
 	}
 
-	hwnd = CreateWindow(WindowClassName, windowTitle,
-		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+	RECT rect = { 0, 0, windowWidth, windowHeight };
+	DWORD winStyleEx = WS_EX_OVERLAPPEDWINDOW;
+	DWORD winStyle = WS_OVERLAPPEDWINDOW;
+	AdjustWindowRectEx(&rect, winStyle, false, winStyleEx);
+
+	hwnd = CreateWindowEx(winStyleEx, WindowClassName, windowTitle, winStyle,
 		CW_USEDEFAULT, CW_USEDEFAULT,
-		windowWidth, windowHeight,
+		rect.right - rect.left, rect.bottom - rect.top,
 		nullptr, nullptr, hInstance, nullptr);
 	if (!hwnd)
 	{
 		Fatal("Failed to create window!");
 		return false;
 	}
+	ShowWindow(hwnd, SW_SHOW);
+	UpdateWindow(hwnd);
+
+	GetClientRect(hwnd, &rect);
+	windowWidth = rect.right - rect.left;
+	windowHeight = rect.bottom - rect.top;
 
 	if (!initOpenGL11Context())
 	{
 		Fatal("Failed to initialize OpenGL 1.1 context!");
 		return false;
 	}
+
+	colorBuffer::Create(frameBufferWidth, frameBufferHeight);
+
+	lastFrameTime = std::chrono::steady_clock::now();
+	deltaTime = 0.0f;
 
 	IsRunningApp = true;
 	return true;
@@ -184,6 +233,22 @@ bool engine::Initialize(uint16_t wndWidth, uint16_t wndHeight, const wchar_t* wi
 void engine::Shutdown()
 {
 	IsRunningApp = false;
+
+	colorBuffer::Destroy();
+		
+	if (hglrc)
+	{
+		wglMakeCurrent(nullptr, nullptr);
+		wglDeleteContext(hglrc);
+	}
+	if (hwnd && hdc) ReleaseDC(hwnd, hdc);
+	if (hwnd) DestroyWindow(hwnd);
+	if (hInstance) UnregisterClass(WindowClassName, hInstance);
+
+	hglrc = nullptr;
+	hdc = nullptr;
+	hwnd = nullptr;
+	hInstance = nullptr;
 }
 //=============================================================================
 bool engine::IsRunning()
@@ -208,12 +273,33 @@ bool engine::ProcessEvents()
 //=============================================================================
 void engine::BeginFrame()
 {
+	auto currentTime = std::chrono::steady_clock::now();
+	deltaTime = std::chrono::duration<float>(currentTime - lastFrameTime).count();
+	lastFrameTime = currentTime;
 
+	// нет смысла очищать экран, так как мы сразу же перерисовываем весь фреймбуфер
+	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	//glClear(GL_COLOR_BUFFER_BIT);
+	colorBuffer::BeginDraw();
 }
 //=============================================================================
 void engine::EndFrame()
 {
+	colorBuffer::EndDraw();
 
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f, -1.0f);
+	glTexCoord2f(1.0f, 1.0f); glVertex2f(1.0f, -1.0f);
+	glTexCoord2f(1.0f, 0.0f); glVertex2f(1.0f, 1.0f);
+	glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, 1.0f);
+	glEnd();
+
+	SwapBuffers(hdc);
+
+	wchar_t title[100];
+	float currentFPS = 1.0f / deltaTime;
+	swprintf_s(title, L"Retro Engine - FPS: %.2f, DeltaTime: %.4f", currentFPS, deltaTime);
+	SetWindowText(hwnd, title);
 }
 //=============================================================================
 #endif // _WIN32

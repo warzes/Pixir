@@ -14,7 +14,8 @@
 #include <cassert>
 #include <cmath>
 
-//#include <chrono>
+#include <random>
+#include <chrono>
 //#include <algorithm>
 //#include <array>
 //#include <list>
@@ -33,7 +34,7 @@
 #	define NOKEYSTATES
 #	define NOSYSCOMMANDS
 #	define NORASTEROPS
-#	define NOSHOWWINDOW
+//#	define NOSHOWWINDOW
 #	define OEMRESOURCE
 #	define NOATOM
 #	define NOCLIPBOARD
@@ -68,8 +69,6 @@
 
 #	include <gl/GL.h>
 #endif
-
-
 
 #if defined(_MSC_VER)
 #	pragma warning(pop)

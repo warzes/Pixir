@@ -13,6 +13,9 @@
     <ClCompile Include="PlatformWin32.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
+    <ClCompile Include="ColorBuffer.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameApp.h" />
@@ -28,6 +31,9 @@
       <Filter>Engine</Filter>
     </ClInclude>
     <ClInclude Include="MiniOpenGL11.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="ColorBuffer.h">
       <Filter>Engine</Filter>
     </ClInclude>
   </ItemGroup>
