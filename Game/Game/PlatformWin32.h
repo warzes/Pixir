@@ -12,6 +12,8 @@ namespace engine
 	bool ProcessEvents();
 	void BeginFrame();
 	void EndFrame();
+
+	float GetDeltaTime();
 } // namespace engine
 
 #endif // _WIN32
