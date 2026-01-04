@@ -159,6 +159,13 @@ void GameApp()
 					triProjected.p[1].x, triProjected.p[1].y,
 					triProjected.p[2].x, triProjected.p[2].y,
 					255, 255, 255);
+
+				colorBuffer::FillTriangle(
+					triProjected.p[0].x, triProjected.p[0].y,
+					triProjected.p[1].x, triProjected.p[1].y,
+					triProjected.p[2].x, triProjected.p[2].y,
+					100, 255, 100);
+
 			}
 
 			colorBuffer::SetPixel(1, 1, 255, 20, 20);
