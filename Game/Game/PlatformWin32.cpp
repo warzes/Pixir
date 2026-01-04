@@ -124,7 +124,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 			int height = HIWORD(lParam);
 			if (width > 0 && height > 0)
 			{
-				setWindowSize(width, height);
+				setWindowSize(static_cast<uint16_t>(width), static_cast<uint16_t>(height));
 				if (hglrc)
 				{
 					glViewport(0, 0, windowWidth, windowHeight);
@@ -212,8 +212,16 @@ bool engine::Initialize(uint16_t wndWidth, uint16_t wndHeight, const wchar_t* wi
 	UpdateWindow(hwnd);
 
 	GetClientRect(hwnd, &rect);
-	windowWidth = rect.right - rect.left;
-	windowHeight = rect.bottom - rect.top;
+	auto clientWidth = (rect.right - rect.left);
+	auto clientHeight = (rect.bottom - rect.top);
+	if (clientWidth < 0 || clientHeight < 0)
+	{
+		Fatal("Invalid window rectangle dimensions");
+		return false;
+	}
+
+	windowWidth = static_cast<uint16_t>(clientWidth);
+	windowHeight = static_cast<uint16_t>(clientHeight);
 
 	if (!initOpenGL11Context())
 	{

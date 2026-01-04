@@ -25,9 +25,9 @@ void GameApp()
 			}
 			engine::BeginFrame();
 			
-			for (size_t x = 0; x < colorBuffer::GetWidth(); x++)
+			for (uint16_t x = 0; x < colorBuffer::GetWidth(); x++)
 			{
-				for (size_t y = 0; y < colorBuffer::GetHeight(); y++)
+				for (uint16_t y = 0; y < colorBuffer::GetHeight(); y++)
 				{
 					colorBuffer::SetPixel(x, y,
 						static_cast<uint8_t>(dis(gen)),

@@ -78,11 +78,11 @@ void colorBuffer::EndDraw()
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 }
 //=============================================================================
-void colorBuffer::SetPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+void colorBuffer::SetPixel(uint16_t x, uint16_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
-	if (x < 0 || x >= colorBufferWidth || y < 0 || y >= colorBufferHeight) return;
+	if (x >= colorBufferWidth || y >= colorBufferHeight) return;
 
-	const size_t index = (y * colorBufferWidth + x) * 4;
+	const size_t index = (y * colorBufferWidth + x) * 4u;
 	if (ptrBuffer)
 	{
 		ptrBuffer[index + 0] = r;
