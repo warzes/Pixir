@@ -8,7 +8,13 @@ namespace
 {
 	GLuint colorBufferTextureID{ 0 };
 	GLuint pboID{ 0 };
-	uint8_t* shadowPtrBuffer{ nullptr }; // TODO: переделать под uint32_t
+	uint8_t* shadowPtrBuffer{ nullptr }; // TODO: переделать под uint32_t/// TODO: не обязательно шаманить с конвертацией...
+	/*
+	это тоже работает
+	uint32_t* shadowPtrBuffer{ nullptr };
+	struct Color{b g r a};
+	shadowPtrBuffer[0] = Color
+	*/
 
 	uint16_t colorBufferWidth;
 	uint16_t colorBufferHeight;
