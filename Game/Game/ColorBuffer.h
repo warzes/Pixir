@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #if defined(_WIN32)
 
@@ -22,9 +22,6 @@ namespace colorBuffer
 
 	void DrawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255);
 	void DrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255);
-
-	// https://www.avrfreaks.net/sites/default/files/triangles.c
-	void FillTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255);
 
 } // namespace colorBuffer
 
